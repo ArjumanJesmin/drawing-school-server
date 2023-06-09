@@ -32,12 +32,34 @@ async function run() {
 
     const allDataCollection = client.db("Akibuki").collection('allData')
     const classCollection = client.db("Akibuki").collection('classes')
+    const userCollection = client.db("Akibuki").collection('users')
 
     //allData collection------------------------
     app.get('/allData', async (req, res) => {
       const result = await allDataCollection.find().toArray()
       res.send(result)
     })
+
+    //users collection------------------------
+    app.post('/users', async (req, res) => {
+      const user = req.body;
+      const result = await userCollection.insertOne(user)
+      res.send(result)
+    })
+
+    app.post('/users', async (req, res) => {
+      const user = req.body;
+      console.log(user);
+      const query = { email: user.email }
+      const existingUser = await userCollection.findOne(query)
+
+      if (existingUser) {
+        return res.send({ message: 'User already exists' })
+      }
+      const result = await userCollection.insertOne(user)
+      res.send(result)
+    })
+
 
     //classes collection------------------------
     app.post('/classes', async (req, res) => {
