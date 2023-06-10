@@ -51,7 +51,7 @@ async function run() {
     client.connect();
 
     const allDataCollection = client.db("Akibuki").collection('allData')
-    const classCollection = client.db("Akibuki").collection('classes')
+    const classCollection = client.db("Akibuki").collection('studentClass')
     const userCollection = client.db("Akibuki").collection('users')
 
     //jwt collection------------------------
@@ -151,12 +151,25 @@ async function run() {
 
 
     //classes collection------------------------
-    app.post('/classes', async (req, res) => {
+    app.post('/studentClass', async (req, res) => {
       const item = req.body;
       console.log(item);
       const result = await classCollection.insertOne(item)
       res.send(result)
     })
+
+
+  //    // Class releted
+  //    app.post('/class', async (req, res) => {
+  //     const newItem = req.body;
+  //     const result = await classCollection.insertOne(newItem);
+  //     res.send(result)
+  // })
+
+  app.get('/studentClass', async (req, res) => {
+      const result = await classCollection.find().toArray();
+      res.send(result);
+  })
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
