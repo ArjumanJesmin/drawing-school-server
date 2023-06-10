@@ -103,14 +103,14 @@ async function run() {
     app.get('/users/instructor/:email', async (req, res) => {
       const email = req.params.email;
 
-    
+
       const query = { email: email }
       const user = await userCollection.findOne(query);
       const result = { admin: user?.role === 'instructor' }
       res.send(result);
     })
 
-    //------------------------------------------------
+    //------------ADMIN ------------------------------------
 
     app.post('/users', async (req, res) => {
       const user = req.body;
@@ -134,12 +134,10 @@ async function run() {
           role: 'admin'
         },
       };
-
       const result = await userCollection.updateOne(filter, updateDoc);
       res.send(result);
-
     })
-
+  
 
     app.delete('/users/admin/:id', async (req, res) => {
       const id = req.params.id;
@@ -147,6 +145,23 @@ async function run() {
       const result = await userCollection.deleteOne(query)
       res.send(result)
     })
+
+
+    // ------------------instructor ---------------------------------
+    // Update user role to instructor
+app.patch('/users/instructor/:id', async(req, res) => {
+  const id = req.params.id;
+  const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          role: 'instructor'
+        },
+      };
+      const result = await userCollection.updateOne(filter, updateDoc);
+      res.send(result);
+});
+
+
 
 
 
@@ -158,18 +173,10 @@ async function run() {
       res.send(result)
     })
 
-
-  //    // Class releted
-  //    app.post('/class', async (req, res) => {
-  //     const newItem = req.body;
-  //     const result = await classCollection.insertOne(newItem);
-  //     res.send(result)
-  // })
-
-  app.get('/studentClass', async (req, res) => {
+    app.get('/studentClass', async (req, res) => {
       const result = await classCollection.find().toArray();
       res.send(result);
-  })
+    })
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
@@ -183,6 +190,50 @@ run().catch(console.dir);
 
 
 // ---------------------------------------
+
+
+//=========================================================
+
+// Update class status to approve
+app.put('/classes/:id/approve', (req, res) => {
+  const classId = parseInt(req.params.id);
+  const classIndex = classes.findIndex((classData) => classData.id === classId);
+
+  if (classIndex !== -1) {
+    classes[classIndex].status = 'approved';
+    res.sendStatus(200);
+  } else {
+    res.sendStatus(404);
+  }
+});
+
+// Update class status to deny and set feedback
+app.put('/classes/:id/deny', (req, res) => {
+  const classId = parseInt(req.params.id);
+  const classIndex = classes.findIndex((classData) => classData.id === classId);
+
+  if (classIndex !== -1) {
+    classes[classIndex].status = 'denied';
+    classes[classIndex].feedback = req.body.feedback;
+    res.sendStatus(200);
+  } else {
+    res.sendStatus(404);
+  }
+});
+
+// Update class feedback
+app.put('/classes/:id/feedback', (req, res) => {
+  const classId = parseInt(req.params.id);
+  const classIndex = classes.findIndex((classData) => classData.id === classId);
+
+  if (classIndex !== -1) {
+    classes[classIndex].feedback = req.body.feedback;
+    res.sendStatus(200);
+  } else {
+    res.sendStatus(404);
+  }
+});
+//=========================================================
 
 
 app.get('/', (req, res) => {
