@@ -48,11 +48,12 @@ async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
-    client.connect();
+
 
     const allDataCollection = client.db("Akibuki").collection('allData')
     const classCollection = client.db("Akibuki").collection('studentClass')
     const userCollection = client.db("Akibuki").collection('users')
+    const selectCollection = client.db("Akibuki").collection('myClass')
 
     //jwt collection------------------------
     app.post('/jwt', (req, res) => {
@@ -74,11 +75,25 @@ async function run() {
       next();
     }
 
+
     //allData collection------------------------
     app.get('/allData', async (req, res) => {
       const result = await allDataCollection.find().toArray()
       res.send(result)
     })
+
+    //------------myClass------------------------------------
+
+app.post('/myClass', async (req, res) => {
+  const newItem = req.body;
+  const result = await selectCollection.insertOne(newItem);
+  res.send(result)
+})
+
+app.get('/myClass', async (req, res) => {
+  const result = await selectCollection.find().toArray();
+  res.send(result);
+})
 
 
 
@@ -137,7 +152,7 @@ async function run() {
       const result = await userCollection.updateOne(filter, updateDoc);
       res.send(result);
     })
-  
+
 
     app.delete('/users/admin/:id', async (req, res) => {
       const id = req.params.id;
@@ -149,9 +164,9 @@ async function run() {
 
     // ------------------instructor ---------------------------------
     // Update user role to instructor
-app.patch('/users/instructor/:id', async(req, res) => {
-  const id = req.params.id;
-  const filter = { _id: new ObjectId(id) };
+    app.patch('/users/instructor/:id', async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
       const updateDoc = {
         $set: {
           role: 'instructor'
@@ -159,7 +174,7 @@ app.patch('/users/instructor/:id', async(req, res) => {
       };
       const result = await userCollection.updateOne(filter, updateDoc);
       res.send(result);
-});
+    });
 
 
 
@@ -168,7 +183,6 @@ app.patch('/users/instructor/:id', async(req, res) => {
     //classes collection------------------------
     app.post('/studentClass', async (req, res) => {
       const item = req.body;
-      console.log(item);
       const result = await classCollection.insertOne(item)
       res.send(result)
     })
@@ -192,10 +206,13 @@ run().catch(console.dir);
 // ---------------------------------------
 
 
+
+
+
 //=========================================================
 
 // Update class status to approve
-app.put('/classes/:id/approve', (req, res) => {
+app.put('/studentClass/:id/approve', (req, res) => {
   const classId = parseInt(req.params.id);
   const classIndex = classes.findIndex((classData) => classData.id === classId);
 
@@ -208,7 +225,7 @@ app.put('/classes/:id/approve', (req, res) => {
 });
 
 // Update class status to deny and set feedback
-app.put('/classes/:id/deny', (req, res) => {
+app.put('/studentClass/:id/deny', (req, res) => {
   const classId = parseInt(req.params.id);
   const classIndex = classes.findIndex((classData) => classData.id === classId);
 
@@ -222,7 +239,7 @@ app.put('/classes/:id/deny', (req, res) => {
 });
 
 // Update class feedback
-app.put('/classes/:id/feedback', (req, res) => {
+app.put('/studentClass/:id/feedback', (req, res) => {
   const classId = parseInt(req.params.id);
   const classIndex = classes.findIndex((classData) => classData.id === classId);
 
