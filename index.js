@@ -53,7 +53,9 @@ async function run() {
     const allDataCollection = client.db("Akibuki").collection('allData')
     const classCollection = client.db("Akibuki").collection('studentClass')
     const userCollection = client.db("Akibuki").collection('users')
-    const selectCollection = client.db("Akibuki").collection('myClass')
+
+    const manageClassCollection = client.db("Akibuki").collection('manageClass')
+   
 
     //jwt collection------------------------
     app.post('/jwt', (req, res) => {
@@ -61,8 +63,6 @@ async function run() {
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
       res.send({ token })
     })
-
-
 
     // verifyAdmin ----------------------------------
     const verifyAdmin = async (req, res, next) => {
@@ -74,15 +74,13 @@ async function run() {
       }
       next();
     }
-
-
     //allData collection------------------------
     app.get('/allData', async (req, res) => {
       const result = await allDataCollection.find().toArray()
       res.send(result)
     })
 
-    //------------myClass------------------------------------
+    //------------myClass-------------------------------
 
 app.post('/myClass', async (req, res) => {
   const newItem = req.body;
@@ -95,17 +93,13 @@ app.get('/myClass', async (req, res) => {
   res.send(result);
 })
 
-
-
     //users collection------------------------
     app.get('/users', async (req, res) => {
       const result = await userCollection.find().toArray()
       res.send(result)
     })
 
-
     // admin /  instructor ----------------------------------
-
     app.get('/users/admin/:email', async (req, res) => {
       const email = req.params.email;
 
@@ -126,7 +120,6 @@ app.get('/myClass', async (req, res) => {
     })
 
     //------------ADMIN ------------------------------------
-
     app.post('/users', async (req, res) => {
       const user = req.body;
       const query = { email: user.email }
@@ -177,9 +170,6 @@ app.get('/myClass', async (req, res) => {
     });
 
 
-
-
-
     //classes collection------------------------
     app.post('/studentClass', async (req, res) => {
       const item = req.body;
@@ -192,6 +182,33 @@ app.get('/myClass', async (req, res) => {
       res.send(result);
     })
 
+    // ---------------%%%%% Admin Manage Class %%%%%%------------------
+
+    app.post('/manageClass', async (req, res) => {
+      const item = req.body;
+      console.log(item)
+      const result = await manageClassCollection.insertOne(item);
+      res.send(result);
+  })
+
+  app.get('/manageClass', async (req, res) => {
+      const result = await manageClassCollection.find().toArray();
+      res.send(result)
+  })
+
+  app.delete('/manageClass/:id', async (req, res) => {
+    const id = req.params.id;
+    const query = { _id: new ObjectId(id) }
+    const result = await classCollection.deleteOne(query)
+    res.send(result)
+  })
+// -----------%%%%%%%%%%%%%%%%%%------------------------
+
+
+
+
+
+//#################### END #############################
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
@@ -201,56 +218,6 @@ app.get('/myClass', async (req, res) => {
   }
 }
 run().catch(console.dir);
-
-
-// ---------------------------------------
-
-
-
-
-
-//=========================================================
-
-// Update class status to approve
-app.put('/studentClass/:id/approve', (req, res) => {
-  const classId = parseInt(req.params.id);
-  const classIndex = classes.findIndex((classData) => classData.id === classId);
-
-  if (classIndex !== -1) {
-    classes[classIndex].status = 'approved';
-    res.sendStatus(200);
-  } else {
-    res.sendStatus(404);
-  }
-});
-
-// Update class status to deny and set feedback
-app.put('/studentClass/:id/deny', (req, res) => {
-  const classId = parseInt(req.params.id);
-  const classIndex = classes.findIndex((classData) => classData.id === classId);
-
-  if (classIndex !== -1) {
-    classes[classIndex].status = 'denied';
-    classes[classIndex].feedback = req.body.feedback;
-    res.sendStatus(200);
-  } else {
-    res.sendStatus(404);
-  }
-});
-
-// Update class feedback
-app.put('/studentClass/:id/feedback', (req, res) => {
-  const classId = parseInt(req.params.id);
-  const classIndex = classes.findIndex((classData) => classData.id === classId);
-
-  if (classIndex !== -1) {
-    classes[classIndex].feedback = req.body.feedback;
-    res.sendStatus(200);
-  } else {
-    res.sendStatus(404);
-  }
-});
-//=========================================================
 
 
 app.get('/', (req, res) => {
