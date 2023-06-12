@@ -2,6 +2,7 @@ const express = require('express')
 const cors = require('cors')
 const jwt = require('jsonwebtoken')
 require('dotenv').config()
+const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY)
 
 
 
@@ -51,10 +52,16 @@ async function run() {
 
 
     const allDataCollection = client.db("Akibuki").collection('allData')
+
+
     const classCollection = client.db("Akibuki").collection('studentClass')
     const userCollection = client.db("Akibuki").collection('users')
+    
 
     const manageClassCollection = client.db("Akibuki").collection('manageClass')
+    const selectCollection = client.db("Akibuki").collection('myClass')
+
+    const paymentCollection = client.db("Akibuki").collection('paymentHistory')
    
 
     //jwt collection------------------------
@@ -182,6 +189,65 @@ app.get('/myClass', async (req, res) => {
       res.send(result);
     })
 
+
+
+    //Create Payment Intent-------------------
+    // create payment intent
+    app.post('/create-payment-intent',  async (req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price * 100);
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: 'usd',
+        payment_method_types: ['card']
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret
+      })
+    })
+
+
+    app.post('/payments', async (req, res) => {
+      const payment = req.body;
+      const insertResult = await paymentCollection.insertOne(payment)
+
+      const query = { _id: { $in: payment.cartItems.map(id => new ObjectId(id)) } }
+      const deleteResult = await selectCollection.deleteMany(query)
+
+      res.send({ insertResult, deleteResult })
+  })
+
+    // app.get('/admin-stats', verifyJWT, verifyAdmin, async (req, res) => {
+    //   const users = await userCollection.estimatedDocumentCount();
+    //   const products = await classCollection.estimatedDocumentCount();
+    //   const orders = await paymentCollection.estimatedDocumentCount();
+      
+
+    //   // best way to get sum of the price field is to use group and sum operator
+    //   /*
+    //     await paymentCollection.aggregate([
+    //       {
+    //         $group: {
+    //           _id: null,
+    //           total: { $sum: '$price' }
+    //         }
+    //       }
+    //     ]).toArray()
+    //   */
+
+    //   const payments = await paymentCollection.find().toArray();
+    //   const revenue = payments.reduce( ( sum, payment) => sum + payment.price, 0)
+
+    //   res.send({
+    //     revenue,
+    //     users,
+    //     products,
+    //     orders
+    //   })
+    // })
+
+    
     // ---------------%%%%% Admin Manage Class %%%%%%------------------
 
     app.post('/manageClass', async (req, res) => {
