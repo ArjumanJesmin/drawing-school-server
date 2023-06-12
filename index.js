@@ -56,13 +56,13 @@ async function run() {
 
     const classCollection = client.db("Akibuki").collection('studentClass')
     const userCollection = client.db("Akibuki").collection('users')
-    
+
 
     const manageClassCollection = client.db("Akibuki").collection('manageClass')
     const selectCollection = client.db("Akibuki").collection('myClass')
 
     const paymentCollection = client.db("Akibuki").collection('paymentHistory')
-   
+
 
     //jwt collection------------------------
     app.post('/jwt', (req, res) => {
@@ -89,16 +89,29 @@ async function run() {
 
     //------------myClass-------------------------------
 
-app.post('/myClass', async (req, res) => {
-  const newItem = req.body;
-  const result = await selectCollection.insertOne(newItem);
-  res.send(result)
-})
+    app.post('/myClass', async (req, res) => {
+      const newItem = req.body;
+      const result = await selectCollection.insertOne(newItem);
+      res.send(result)
+    })
 
-app.get('/myClass', async (req, res) => {
-  const result = await selectCollection.find().toArray();
-  res.send(result);
-})
+
+    app.get('/myClass', async (req, res) => {
+      try {
+        console.log(req.query.email);
+        let query = {};
+
+        if (req.query?.email) {
+          query = { email: req.query.email };
+        }
+
+        const result = await selectCollection.find(query).toArray();
+        res.send(result);
+      } catch (error) {
+        console.log(error);
+        res.status(500).send('Error retrieving data');
+      }
+    });
 
     //users collection------------------------
     app.get('/users', async (req, res) => {
@@ -139,7 +152,8 @@ app.get('/myClass', async (req, res) => {
       const result = await userCollection.insertOne(user);
       res.send(result);
     });
-
+    
+   ///shjkl==============================
     app.patch('/users/admin/:id', async (req, res) => {
       const id = req.params.id;
 
@@ -152,7 +166,7 @@ app.get('/myClass', async (req, res) => {
       const result = await userCollection.updateOne(filter, updateDoc);
       res.send(result);
     })
-
+///shjkl==============================
 
     app.delete('/users/admin/:id', async (req, res) => {
       const id = req.params.id;
@@ -192,8 +206,25 @@ app.get('/myClass', async (req, res) => {
 
 
     //Create Payment Intent-------------------
+
+    app.get('/paymentHistory', async (req, res) => {
+      try {
+        console.log(req.query.email);
+        let query = {};
+
+        if (req.query?.email) {
+          query = { email: req.query.email };
+        }
+
+        const result = await paymentCollection.find(query).toArray();
+        res.send(result);
+      } catch (error) {
+        console.log(error);
+        res.status(500).send('Error retrieving data');
+      }
+    });
     // create payment intent
-    app.post('/create-payment-intent',  async (req, res) => {
+    app.post('/create-payment-intent', async (req, res) => {
       const { price } = req.body;
       const amount = parseInt(price * 100);
       const paymentIntent = await stripe.paymentIntents.create({
@@ -216,13 +247,13 @@ app.get('/myClass', async (req, res) => {
       const deleteResult = await selectCollection.deleteMany(query)
 
       res.send({ insertResult, deleteResult })
-  })
+    })
 
     // app.get('/admin-stats', verifyJWT, verifyAdmin, async (req, res) => {
     //   const users = await userCollection.estimatedDocumentCount();
     //   const products = await classCollection.estimatedDocumentCount();
     //   const orders = await paymentCollection.estimatedDocumentCount();
-      
+
 
     //   // best way to get sum of the price field is to use group and sum operator
     //   /*
@@ -247,7 +278,7 @@ app.get('/myClass', async (req, res) => {
     //   })
     // })
 
-    
+
     // ---------------%%%%% Admin Manage Class %%%%%%------------------
 
     app.post('/manageClass', async (req, res) => {
@@ -255,26 +286,26 @@ app.get('/myClass', async (req, res) => {
       console.log(item)
       const result = await manageClassCollection.insertOne(item);
       res.send(result);
-  })
+    })
 
-  app.get('/manageClass', async (req, res) => {
+    app.get('/manageClass', async (req, res) => {
       const result = await manageClassCollection.find().toArray();
       res.send(result)
-  })
+    })
 
-  app.delete('/manageClass/:id', async (req, res) => {
-    const id = req.params.id;
-    const query = { _id: new ObjectId(id) }
-    const result = await classCollection.deleteOne(query)
-    res.send(result)
-  })
-// -----------%%%%%%%%%%%%%%%%%%------------------------
-
-
+    app.delete('/manageClass/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await classCollection.deleteOne(query)
+      res.send(result)
+    })
+    // -----------%%%%%%%%%%%%%%%%%%------------------------
 
 
 
-//#################### END #############################
+
+
+    //#################### END #############################
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
