@@ -3,6 +3,7 @@ const cors = require('cors')
 const jwt = require('jsonwebtoken')
 require('dotenv').config()
 const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY)
+const nodemailer = require("nodemailer");
 
 
 
@@ -113,6 +114,13 @@ async function run() {
       }
     });
 
+    app.delete('/myClass/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await classCollection.deleteOne(query)
+      res.send(result)
+    })
+
     //users collection------------------------
     app.get('/users', async (req, res) => {
       const result = await userCollection.find().toArray()
@@ -131,8 +139,6 @@ async function run() {
 
     app.get('/users/instructor/:email', async (req, res) => {
       const email = req.params.email;
-
-
       const query = { email: email }
       const user = await userCollection.findOne(query);
       const result = { admin: user?.role === 'instructor' }
@@ -152,8 +158,8 @@ async function run() {
       const result = await userCollection.insertOne(user);
       res.send(result);
     });
-    
-   ///shjkl==============================
+
+    ///shjkl==============================
     app.patch('/users/admin/:id', async (req, res) => {
       const id = req.params.id;
 
@@ -166,7 +172,7 @@ async function run() {
       const result = await userCollection.updateOne(filter, updateDoc);
       res.send(result);
     })
-///shjkl==============================
+    ///shjkl==============================
 
     app.delete('/users/admin/:id', async (req, res) => {
       const id = req.params.id;
@@ -177,6 +183,7 @@ async function run() {
 
 
     // ------------------instructor ---------------------------------
+
     // Update user role to instructor
     app.patch('/users/instructor/:id', async (req, res) => {
       const id = req.params.id;
@@ -249,34 +256,6 @@ async function run() {
       res.send({ insertResult, deleteResult })
     })
 
-    // app.get('/admin-stats', verifyJWT, verifyAdmin, async (req, res) => {
-    //   const users = await userCollection.estimatedDocumentCount();
-    //   const products = await classCollection.estimatedDocumentCount();
-    //   const orders = await paymentCollection.estimatedDocumentCount();
-
-
-    //   // best way to get sum of the price field is to use group and sum operator
-    //   /*
-    //     await paymentCollection.aggregate([
-    //       {
-    //         $group: {
-    //           _id: null,
-    //           total: { $sum: '$price' }
-    //         }
-    //       }
-    //     ]).toArray()
-    //   */
-
-    //   const payments = await paymentCollection.find().toArray();
-    //   const revenue = payments.reduce( ( sum, payment) => sum + payment.price, 0)
-
-    //   res.send({
-    //     revenue,
-    //     users,
-    //     products,
-    //     orders
-    //   })
-    // })
 
 
     // ---------------%%%%% Admin Manage Class %%%%%%------------------
@@ -293,14 +272,55 @@ async function run() {
       res.send(result)
     })
 
+    app.get('/manageClass/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await classCollection.findOne(query);
+      res.send(result);
+    });
+
     app.delete('/manageClass/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) }
       const result = await classCollection.deleteOne(query)
       res.send(result)
     })
+
     // -----------%%%%%%%%%%%%%%%%%%------------------------
 
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: process.env.SMTP_PORT,
+      secure: true,
+      auth: {
+        user: process.env.SMTP_MAIL,
+        pass: process.env.SMTP_PASSWORD
+      }
+    });
+    
+
+    // Define a route to handle email sending
+    app.post("/send-email", async (req, res) => {
+      try {
+        const { email, subject, message } = req.body;
+
+        // Define email data
+        const mailOptions = {
+          from: process.env.SMTP_MAIL,
+          to: email,
+          subject: subject,
+          message: message,
+        };
+
+        // Send the email
+        await transporter.sendMail(mailOptions);
+
+        res.status(200).json({ message: "Email sent successfully" });
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "An error occurred while sending the email" });
+      }
+    });
 
 
 
